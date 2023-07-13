@@ -40,13 +40,17 @@ int main() {
     Pos spawn;
     uint64_t seed = START_SEED;
 
-    malloc (8589934592);
+    for (int i = 0; i < numberOfStructs; ++i) {
+    data[i].candidates = malloc (1);
+    data[i].positions = malloc (1);
+    }
 
 for (uint64_t START_SEED; seed < SEEDS_TO_CHECK; ++seed) {
+    
+    applySeed(&g, DIM_OVERWORLD, seed);
     spawn = getSpawn(&g);
     DoublePos origCoords = {{0, 0}, {0, 0}};
     origCoords = (DoublePos) {{-300 + spawn.x, -300 + spawn.z}, {300 + spawn.x, 300 + spawn.z}};
-    applySeed(&g, DIM_OVERWORLD, seed);
 
     const int numberOfStructs = sizeof(STRUCTS)/sizeof(*STRUCTS);		
 	StructData data[numberOfStructs];				
