@@ -23,11 +23,9 @@ const char *FILEPATH = "seeds.txt";
 const int MC = MC_1_16_1;
 const int STRUCTS[] = {Ruined_Portal};
 
-
-DoublePos origCoords = {{-300, -300}, {300, 300}};
 const uint64_t START_SEED = 0;
 //Lowest seed: -9223372036854775808
-const uint64_t SEEDS_TO_CHECK = 0xffff;
+const uint64_t SEEDS_TO_CHECK = 1000;
 //Max seed: 18446744073709551616
 
 int main() 
@@ -54,7 +52,7 @@ int main()
         applySeed(&g, DIM_OVERWORLD, seed);
         spawn = getSpawn(&g);
         DoublePos origCoords = {{0, 0}, {0, 0}};
-        origCoords = (DoublePos) {{-300 + spawn.x, -300 + spawn.z}, {300 + spawn.x, 300 + spawn.z}};
+        origCoords = (DoublePos) {{-50 + spawn.x, -50 + spawn.z}, {50 + spawn.x, 50 + spawn.z}};
 
         const int numberOfStructs = sizeof(STRUCTS)/sizeof(*STRUCTS);		
 	    StructData data[numberOfStructs];				
@@ -93,8 +91,8 @@ int main()
 		                        currentStructureConfig.properties & STRUCT_END    ? DIM_END      :
 		                                                                            DIM_OVERWORLD;
 
-		    data[i].candidates = realloc(data[i].candidates, (data[i].regionCoords.second.x - data[i].regionCoords.first.x + 1) * (data[i].regionCoords.second.z - data[i].regionCoords.first.z + 1) * sizeof(Pos));
-		    data[i].positions = realloc(data[i].positions, (data[i].regionCoords.second.x - data[i].regionCoords.first.x + 1) * (data[i].regionCoords.second.z - data[i].regionCoords.first.z + 1) * sizeof(Pos));
+		    data[i].candidates = malloc((data[i].regionCoords.second.x - data[i].regionCoords.first.x + 1) * (data[i].regionCoords.second.z - data[i].regionCoords.first.z + 1) * sizeof(Pos));
+            data[i].positions = malloc((data[i].regionCoords.second.x - data[i].regionCoords.first.x + 1) * (data[i].regionCoords.second.z - data[i].regionCoords.first.z + 1) * sizeof(Pos));
 
 		    for (int i = 0; i < numberOfStructs; ++i) 
             {
@@ -135,13 +133,13 @@ int main()
 			fprintf(fp, "%" PRId64 "\n", seed);
             nextSeed: continue;
         }
-    }
-    fprintf(fp, "Done\n");
-	fclose(fp);
-	return 0;    
+    }   
     for (int i = 0; i < numberOfStructs; ++i) 
     {
 		free(data[i].candidates);
 		free(data[i].positions);
 	}
+    fprintf(fp, "Done\n");
+	fclose(fp); 
+    return 0;
 }
