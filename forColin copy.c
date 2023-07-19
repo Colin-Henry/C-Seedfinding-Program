@@ -91,24 +91,24 @@ int main()
 		
 		switch (currentStructureConfig.regionSize) 
 		{
-		case 32:
-			data[i].regionCoords.first.x  = origCoords.first.x  >> 9;
-			data[i].regionCoords.first.z  = origCoords.first.z  >> 9;
-			data[i].regionCoords.second.x = origCoords.second.x >> 9;
-			data[i].regionCoords.second.z = origCoords.second.z >> 9;
-			break;
-		case 1:
-			data[i].regionCoords.first.x  = origCoords.first.x  >> 4;
-			data[i].regionCoords.first.z  = origCoords.first.z  >> 4;
-			data[i].regionCoords.second.x = origCoords.second.x >> 4;
-			data[i].regionCoords.second.z = origCoords.second.z >> 4;
-			break;
-		default:
-			data[i].regionCoords.first.x  = (origCoords.first.x  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x  < 0);
-			data[i].regionCoords.first.z  = (origCoords.first.z  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z  < 0);
-			data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
-			data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
-			break;
+			case 32:
+				data[i].regionCoords.first.x  = origCoords.first.x  >> 9;
+				data[i].regionCoords.first.z  = origCoords.first.z  >> 9;
+				data[i].regionCoords.second.x = origCoords.second.x >> 9;
+				data[i].regionCoords.second.z = origCoords.second.z >> 9;
+				break;
+			case 1:
+				data[i].regionCoords.first.x  = origCoords.first.x  >> 4;
+				data[i].regionCoords.first.z  = origCoords.first.z  >> 4;
+				data[i].regionCoords.second.x = origCoords.second.x >> 4;
+				data[i].regionCoords.second.z = origCoords.second.z >> 4;
+				break;
+			default:
+				data[i].regionCoords.first.x  = (origCoords.first.x  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x  < 0);
+				data[i].regionCoords.first.z  = (origCoords.first.z  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z  < 0);
+				data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
+				data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
+				break;
 		}
 
 		
@@ -152,39 +152,39 @@ int main()
 		}
 
 		for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) 
+		{
+			
+			uint64_t seed = lower48 | (upper16 << 48);
+			
+			for (int i = 0; i < numberOfStructs; ++i) 
 			{
-			
-				uint64_t seed = lower48 | (upper16 << 48);
-			
-				for (int i = 0; i < numberOfStructs; ++i) 
+				
+				data[i].positionsCount = 0;
+				
+				
+				if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
+				
+				
+				for (int candidate = 0; candidate < data[i].candidatesCount; ++candidate) 
 				{
-				
-					data[i].positionsCount = 0;
-				
-				
-					if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
-				
-				
-					for (int candidate = 0; candidate < data[i].candidatesCount; ++candidate) 
-					{
 					
 					
-						if (!isViableStructurePos(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z, 0) ||
-					    !isViableStructureTerrain(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z)) continue;
+					if (!isViableStructurePos(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z, 0) ||
+				   !isViableStructureTerrain(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z)) continue;
 					
 					
-						data[i].positions[data[i].positionsCount].x = data[i].candidates[candidate].x;
-						data[i].positions[data[i].positionsCount].z = data[i].candidates[candidate].z;
-						++data[i].positionsCount;
-					}
-				
-					if (!data[i].positionsCount) goto nextStructureSeed;
+					data[i].positions[data[i].positionsCount].x = data[i].candidates[candidate].x;
+					data[i].positions[data[i].positionsCount].z = data[i].candidates[candidate].z;
+					++data[i].positionsCount;
 				}
-			
-			
-				fprintf(fp, "%" PRId64 "\n", seed);
-            	goto nextStructureSeed;
+				
+				if (!data[i].positionsCount) goto nextStructureSeed;
 			}
+			
+			
+			fprintf(fp, "%" PRId64 "\n", seed);
+            goto nextStructureSeed;
+		}
 		nextStructureSeed: continue;
 	}
 
