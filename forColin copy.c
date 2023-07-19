@@ -137,63 +137,58 @@ int main()
 
 	for (uint64_t lower48 = START_STRUCTURE_SEED; lower48 < STRUCTURE_SEEDS_TO_CHECK; ++lower48) 
 	{
-	int i = 0;
+		int i = 0;
 
-	DoublePos boxDimensions = {{data[i].regionCoords.first.x, data[i].regionCoords.first.z}, {data[i].regionCoords.second.x, data[i].regionCoords.second.z}};
-	result = structureChecker (lower48, Bastion, MC, boxDimensions, data, result);
-	if (result == 1) 
-	{
-    	goto nextStructureSeed;
-		//Didn't find a candidate and continuing to the next structure seed
-	}
-	else
-	{
-		continue;
-	}
-
-	for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) 
+		DoublePos boxDimensions = {{data[i].regionCoords.first.x, data[i].regionCoords.first.z}, {data[i].regionCoords.second.x, data[i].regionCoords.second.z}};
+		result = structureChecker (lower48, Bastion, MC, boxDimensions, data, result);
+		if (result == 1) 
 		{
-			
-			uint64_t seed = lower48 | (upper16 << 48);
-			
-			for (int i = 0; i < numberOfStructs; ++i) 
+    		goto nextStructureSeed;
+			//Didn't find a candidate and continuing to the next structure seed
+		}
+		else
+		{
+			continue;
+		}
+
+		for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) 
 			{
-				
-				data[i].positionsCount = 0;
-				
-				
-				if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
-				
-				
-				for (int candidate = 0; candidate < data[i].candidatesCount; ++candidate) 
+			
+				uint64_t seed = lower48 | (upper16 << 48);
+			
+				for (int i = 0; i < numberOfStructs; ++i) 
 				{
+				
+					data[i].positionsCount = 0;
+				
+				
+					if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
+				
+				
+					for (int candidate = 0; candidate < data[i].candidatesCount; ++candidate) 
+					{
 					
 					
-					if (!isViableStructurePos(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z, 0) ||
+						if (!isViableStructurePos(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z, 0) ||
 					    !isViableStructureTerrain(STRUCTS[i], &g, data[i].candidates[candidate].x, data[i].candidates[candidate].z)) continue;
 					
 					
-					data[i].positions[data[i].positionsCount].x = data[i].candidates[candidate].x;
-					data[i].positions[data[i].positionsCount].z = data[i].candidates[candidate].z;
-					++data[i].positionsCount;
-				}
+						data[i].positions[data[i].positionsCount].x = data[i].candidates[candidate].x;
+						data[i].positions[data[i].positionsCount].z = data[i].candidates[candidate].z;
+						++data[i].positionsCount;
+					}
 				
-				if (!data[i].positionsCount) goto nextStructureSeed;
+					if (!data[i].positionsCount) goto nextStructureSeed;
+				}
+			
+			
+				fprintf(fp, "%" PRId64 "\n", seed);
+            	goto nextStructureSeed;
 			}
-			
-			
-			fprintf(fp, "%" PRId64 "\n", seed);
-            goto nextStructureSeed;
-		}
-		
 		nextStructureSeed: continue;
 	}
+
 	fprintf(fp, "Done\n");
 	fclose(fp); 
-    return 0;
-}  
-
-
-
-
-
+    return 0; 
+}
