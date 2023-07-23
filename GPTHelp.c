@@ -21,9 +21,19 @@ typedef struct {
     int positionsCount;
 } StructData;
 
-int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates);
 
-int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates) {
+const int r = 0;
+const DoublePos origCoords = {{-96, -96}, {96, 96}};
+const char* FILEPATH = "seeds.txt";
+const int STRUCTS[] = {Bastion};
+const int MC = MC_1_16_1;
+const uint64_t START_STRUCTURE_SEED = 0;
+const uint64_t STRUCTURE_SEEDS_TO_CHECK = 1000;
+const int UPPER_BITS_TO_CHECK = 1;
+
+int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates, Generator g);
+
+int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates, Generator g) {
     Pos p;
     int i = 0;
     data[i].candidatesCount = 0;
@@ -40,8 +50,13 @@ int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, S
             data[i].candidates[data[i].candidatesCount] = p;
             ++data[i].candidatesCount;
 
-            bastionCoordinates->x = regX;
-            bastionCoordinates->z = regZ;
+            if (!isViableStructurePos(Bastion, &g, p.x, p.z, 0)){
+                continue;
+            }
+
+
+            bastionCoordinates->x = p.x;
+            bastionCoordinates->z = p.z;
         }
     }
 
@@ -52,15 +67,6 @@ int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, S
     }
     return result;
 }
-
-const int r = 0;
-const DoublePos origCoords = {{-96, -96}, {96, 96}};
-const char* FILEPATH = "seeds.txt";
-const int STRUCTS[] = {Bastion};
-const int MC = MC_1_16_1;
-const uint64_t START_STRUCTURE_SEED = 0;
-const uint64_t STRUCTURE_SEEDS_TO_CHECK = 1000;
-const int UPPER_BITS_TO_CHECK = 1;
 
 
 int main() {
@@ -112,18 +118,23 @@ int main() {
     FILE* fp = fopen(FILEPATH, "a");
     if (!fp) exit(1);
 
-    Generator g;
+    const Generator g;
     setupGenerator(&g, MC, 0);
+
+    int biome = 0;
 
     int result = 0;
 
     for (uint64_t lower48 = START_STRUCTURE_SEED; lower48 < STRUCTURE_SEEDS_TO_CHECK; ++lower48) {
         int i = 0;
-        result = structureChecker(lower48, Bastion, MC, origCoords, data, numberOfStructs, result, &bastionCoordinates);
+        result = structureChecker(lower48, Bastion, MC, origCoords, data, numberOfStructs, result, &bastionCoordinates, g);
         if (result == 1) {
             continue;
             // Didn't find a candidate and continuing to the next structure seed
-        } else {
+        } 
+        else 
+        {
+
             for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) {
                 uint64_t seed = lower48 | (upper16 << 48);
                 for (int i = 0; i < numberOfStructs; ++i) {
@@ -139,11 +150,17 @@ int main() {
                     }
                     if (!data[i].positionsCount) continue;
                 }
+                biome = getBiomeAt(&g, 1, bastionCoordinates.x, 64, bastionCoordinates.z);
+                if (biome == basalt_deltas){
+                    goto nextStructureSeed;
+                }
                 fprintf(fp, "%" PRId64 "\n", seed);
-                fprintf(fp, "Bastion Coordinates: x = %d, z = %d\n", bastionCoordinates.x, bastionCoordinates.z);
+
 
                 goto nextStructureSeed;
             }
+        
+        
         }
         nextStructureSeed: continue;
     }
