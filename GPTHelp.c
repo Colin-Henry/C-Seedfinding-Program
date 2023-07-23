@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <inttypes.h>
 #include "finders.c"
 #include "generator.c"
 #include "biome_tree.c"
@@ -17,9 +21,9 @@ typedef struct {
     int positionsCount;
 } StructData;
 
-int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result);
+int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates);
 
-int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result) {
+int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates) {
     Pos p;
     int i = 0;
     data[i].candidatesCount = 0;
@@ -35,6 +39,9 @@ int structureChecker(int lower48, int structure, int MC, DoublePos origCoords, S
 
             data[i].candidates[data[i].candidatesCount] = p;
             ++data[i].candidatesCount;
+
+            bastionCoordinates->x = regX;
+            bastionCoordinates->z = regZ;
         }
     }
 
@@ -55,6 +62,7 @@ const uint64_t START_STRUCTURE_SEED = 0;
 const uint64_t STRUCTURE_SEEDS_TO_CHECK = 1000;
 const int UPPER_BITS_TO_CHECK = 1;
 
+
 int main() {
     const int numberOfStructs = sizeof(STRUCTS) / sizeof(*STRUCTS);
     StructData data[numberOfStructs];
@@ -62,6 +70,8 @@ int main() {
     int i = 0;
     data[i].candidates = NULL;
     data[i].positions = NULL;
+
+    Pos bastionCoordinates;
 
     for (int i = 0; i < numberOfStructs; ++i) {
         StructureConfig currentStructureConfig;
@@ -109,11 +119,11 @@ int main() {
 
     for (uint64_t lower48 = START_STRUCTURE_SEED; lower48 < STRUCTURE_SEEDS_TO_CHECK; ++lower48) {
         int i = 0;
-        result = structureChecker(lower48, Bastion, MC, origCoords, data, numberOfStructs, result);
+        result = structureChecker(lower48, Bastion, MC, origCoords, data, numberOfStructs, result, &bastionCoordinates);
         if (result == 1) {
-            goto nextStructureSeed;
+            continue;
             // Didn't find a candidate and continuing to the next structure seed
-        } else
+        } else {
             for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) {
                 uint64_t seed = lower48 | (upper16 << 48);
                 for (int i = 0; i < numberOfStructs; ++i) {
@@ -127,15 +137,25 @@ int main() {
                         data[i].positions[data[i].positionsCount].z = data[i].candidates[candidate].z;
                         ++data[i].positionsCount;
                     }
-                    if (!data[i].positionsCount) goto nextStructureSeed;
+                    if (!data[i].positionsCount) continue;
                 }
                 fprintf(fp, "%" PRId64 "\n", seed);
+                printf("Bastion Coordinates: x = %d, z = %d\n", bastionCoordinates.x, bastionCoordinates.z);
+
                 goto nextStructureSeed;
             }
+        }
         nextStructureSeed: continue;
     }
 
     fprintf(fp, "Done\n");
     fclose(fp);
+
+    // Free dynamically allocated memory
+    for (int i = 0; i < numberOfStructs; ++i) {
+        free(data[i].candidates);
+        free(data[i].positions);
+    }
+
     return 0;
 }
