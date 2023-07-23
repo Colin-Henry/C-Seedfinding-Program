@@ -140,7 +140,7 @@ int main() {
                     if (!data[i].positionsCount) continue;
                 }
                 fprintf(fp, "%" PRId64 "\n", seed);
-                printf("Bastion Coordinates: x = %d, z = %d\n", bastionCoordinates.x, bastionCoordinates.z);
+                fprintf(fp, "Bastion Coordinates: x = %d, z = %d\n", bastionCoordinates.x, bastionCoordinates.z);
 
                 goto nextStructureSeed;
             }
