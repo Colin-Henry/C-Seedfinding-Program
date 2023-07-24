@@ -25,22 +25,23 @@ typedef struct {
 const int r = 0;
 DoublePos origCoords = {{-96, -96}, {96, 96}};
 const char* FILEPATH = "seeds.txt";
-const int STRUCTS[] = {Bastion, Fortress};
+int STRUCTS[] = {Bastion, Fortress};
 const int MC = MC_1_16_1;
 const uint64_t START_STRUCTURE_SEED = 0;
 const uint64_t STRUCTURE_SEEDS_TO_CHECK = 10000;
 const int UPPER_BITS_TO_CHECK = 1;
+int structureIndex = 0;
 
-int structureChecker(int lower48, int STRUCTS[], int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates, Generator g);
+int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates, Generator g);
 
-int structureChecker(int lower48, int STRUCTS[], int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates, Generator g) {
+int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int dataSize, int result, Pos* bastionCoordinates, Generator g) {
     Pos p;
     int i = 0;
     data[i].candidatesCount = 0;
-
+    int currentStructure = STRUCTS[structureIndex];
     for (int regX = data[i].regionCoords.first.x; regX <= data[i].regionCoords.second.x; ++regX) {
         for (int regZ = data[i].regionCoords.first.z; regZ <= data[i].regionCoords.second.z; ++regZ) {
-            if (!getStructurePos(STRUCTS[1], MC, lower48, regX, regZ, &p)) continue;
+            if (!getStructurePos(currentStructure, MC, lower48, regX, regZ, &p)) continue;
 
             if ((regX == data[i].regionCoords.first.x && p.x < origCoords.first.x) ||
                 (regX == data[i].regionCoords.second.x && p.x > origCoords.second.x) ||
@@ -50,7 +51,7 @@ int structureChecker(int lower48, int STRUCTS[], int MC, DoublePos origCoords, S
             data[i].candidates[data[i].candidatesCount] = p;
             ++data[i].candidatesCount;
 
-            if (!isViableStructurePos(STRUCTS[i], &g, p.x, p.z, 0)){
+            if (!isViableStructurePos(currentStructure, &g, p.x, p.z, 0)){
                 continue;
             }
 
@@ -126,7 +127,8 @@ int main() {
 
     for (uint64_t lower48 = START_STRUCTURE_SEED; lower48 < STRUCTURE_SEEDS_TO_CHECK; ++lower48) {
         int i = 0;
-        result = structureChecker(lower48, STRUCTS[1], MC, origCoords, data, numberOfStructs, result, &bastionCoordinates, g);
+        DoublePos origCoords = {{-96, -96}, {96, 96}};
+        result = structureChecker(lower48, STRUCTS, 0, MC, origCoords, data, numberOfStructs, result, &bastionCoordinates, g);        
         if (result == 1) {
             continue;
             // Didn't find a candidate and continuing to the next structure seed
@@ -136,7 +138,7 @@ int main() {
         origCoords = (DoublePos) {{-96 + bastionCoordinates.x, -96 + bastionCoordinates.z}, {96 + bastionCoordinates.x, 96 + bastionCoordinates.z}};
         biome = getBiomeAt(&g, 1, bastionCoordinates.x, 64, bastionCoordinates.z);
 
-        result = structureChecker(lower48, STRUCTS[2], MC, origCoords, data, numberOfStructs, result, &bastionCoordinates, g);
+        result = structureChecker(lower48, STRUCTS, 1, MC, origCoords, data, numberOfStructs, result, &bastionCoordinates, g);        
         if (result == 1) {
             continue;
             // Didn't find a candidate and continuing to the next structure seed
