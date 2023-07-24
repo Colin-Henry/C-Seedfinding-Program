@@ -54,14 +54,13 @@ int structureChecker(int lower48, int STRUCTS[], int MC, DoublePos origCoords, S
                 continue;
             }
 
-
-            bastionCoordinates->x = p.x;
-            bastionCoordinates->z = p.z;
         }
     }
 
     if (!data[i].candidatesCount) {
         result = 1;
+        data[i].candidates->x = bastionCoordinates->x;
+        data[i].candidates->x = bastionCoordinates->z;
     } else {
         result = 2;
     }
