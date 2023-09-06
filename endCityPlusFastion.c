@@ -29,11 +29,10 @@ const int MC = MC_1_16_1;
 const uint64_t START_STRUCTURE_SEED = 0;
 const uint64_t STRUCTURE_SEEDS_TO_CHECK = 65536; //2^16 = 65536, 2^32 = 4294967296, 2^48 = 281474976710656 ---- Note to myself this is basically useless
 const int UPPER_BITS_TO_CHECK = 1;
-int structureIndex = 0;
 
-int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int result, Pos* bastionCoordinates, Pos* fortCoordinates, Pos* endCityCoordinates);
+int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int result, Pos* bastionCoordinates, Pos* fortressCoordinates, Pos* endCityCoordinates);
 
-int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int result, Pos* bastionCoordinates, Pos* fortCoordinates, Pos* endCityCoordinates) 
+int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int result, Pos* bastionCoordinates, Pos* fortressCoordinates, Pos* endCityCoordinates) 
 {
     Pos p;
     int i = structureIndex; // Use the correct data element corresponding to the structure being checked
@@ -74,8 +73,8 @@ int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, Dou
         result = 2;
         for (int j = 0; j < data[i].candidatesCount; ++j) 
         {
-            fortCoordinates[j].x = data[i].candidates[j].x;
-            fortCoordinates[j].z = data[i].candidates[j].z;
+            fortressCoordinates[j].x = data[i].candidates[j].x;
+            fortressCoordinates[j].z = data[i].candidates[j].z;
         }
     }
     else if (structureIndex == 2)
@@ -90,10 +89,17 @@ int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, Dou
     return result;
 }
 
+void getSeedRNG(uint64_t *seed, uint64_t value);
+
+void getSeedRNG(uint64_t *seed, uint64_t value)
+{
+    value = (*seed ^ 0x5deece66d) & ((1ULL << 48) - 1);
+}
+
 Pos mainIslandGateway(uint64_t lower48)
 {
 	uint64_t rng = 0;               // some initial value idk
-	setSeed(&rng, lower48);            // new Random(seed);
+	getSeedRNG(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
 	int gateway_x = (int)(96.0 * cos(angle));
@@ -108,7 +114,7 @@ Pos mainIslandGateway(uint64_t lower48)
 Pos linkedGateway(uint64_t lower48)
 {
 	uint64_t rng = 0;               // some initial value idk
-	setSeed(&rng, lower48);            // new Random(seed);
+	getSeedRNG(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
 	int gateway_x = (int)(1024.0 * cos(angle));
@@ -186,9 +192,8 @@ int main(int argc, char **argv)
     data[i].positionsCount = 0;
 
     Pos bastionCoordinates[4];
-    Pos fortressCoordinates;
-    Pos fortCoordinates[4];
-    Pos endCityCoordinates[200];
+    Pos fortressCoordinates[4];
+    Pos endCityCoordinates[9];
 
     for (int i = 0; i < numberOfStructs; ++i) 
     {
@@ -235,10 +240,9 @@ int main(int argc, char **argv)
 
     for (uint64_t lower48 = START_STRUCTURE_SEED; lower48 < STRUCTURE_SEEDS_TO_CHECK; ++lower48) 
     {
-        DoublePos bastionCoords = {{-96, -96}, {96, 96}};
-        int structureIndex = 0;
+        DoublePos bastionBoundingBox = {{-96, -96}, {96, 96}};
 
-        result = structureChecker(lower48, STRUCTS, 0, MC, bastionCoords, data, result, bastionCoordinates, fortCoordinates, endCityCoordinates);
+        result = structureChecker(lower48, STRUCTS, 0, MC, bastionBoundingBox, data, result, bastionCoordinates, fortressCoordinates, endCityCoordinates);
         if (result == 1) 
         {
             continue;
@@ -247,9 +251,8 @@ int main(int argc, char **argv)
         {
             for (int bastionIdx = 0; bastionIdx < data[0].candidatesCount; ++bastionIdx) 
             {
-                DoublePos fortressCoords = {{-96 + bastionCoordinates[bastionIdx].x, -96 + bastionCoordinates[bastionIdx].z}, {96 + bastionCoordinates[bastionIdx].x, 96 + bastionCoordinates[bastionIdx].z}};
-                int structureIndex = 1;
-                result = structureChecker(lower48, STRUCTS, 1, MC, fortressCoords, data, result, &fortressCoordinates, fortCoordinates, endCityCoordinates);
+                DoublePos fortressBoundingBox = {{-96 + bastionCoordinates[bastionIdx].x, -96 + bastionCoordinates[bastionIdx].z}, {96 + bastionCoordinates[bastionIdx].x, 96 + bastionCoordinates[bastionIdx].z}};
+                result = structureChecker(lower48, STRUCTS, 1, MC, fortressBoundingBox, data, result, bastionCoordinates, fortressCoordinates, endCityCoordinates);
                 if (result == 1) 
                 {
                     continue;
@@ -271,9 +274,8 @@ int main(int argc, char **argv)
 
 		            Pos outerGateway;
 		            outerGateway = linkedGateway(lower48);
-                    DoublePos endCityCoords = {{-96 + outerGateway.x, -96 + outerGateway.z}, {96 + outerGateway.x, 96 + outerGateway.z}};
-                    int structureIndex = 2;
-                    result = structureChecker(lower48, STRUCTS, 2, MC, endCityCoords, data, result, bastionCoordinates, fortCoordinates, endCityCoordinates);
+                    DoublePos endCityBoundingBox = {{-96 + outerGateway.x, -96 + outerGateway.z}, {96 + outerGateway.x, 96 + outerGateway.z}};
+                    result = structureChecker(lower48, STRUCTS, 2, MC, endCityBoundingBox, data, result, bastionCoordinates, fortressCoordinates, endCityCoordinates);
                     if (result == 1) 
                     {
                         continue;
@@ -316,12 +318,15 @@ int main(int argc, char **argv)
                             goto nextStructureSeed;
                         }
 
-                        biome = getBiomeAt(&g, 1, fortCoordinates[bastionIdx].x, 64, fortCoordinates[bastionIdx].z); 
+                        biome = getBiomeAt(&g, 1, fortressCoordinates[bastionIdx].x, 64, fortressCoordinates[bastionIdx].z); 
                         if (biome != soul_sand_valley) 
                         {    
                             goto nextStructureSeed;
                         }
                         printf("%" PRId64 "\n", seed);
+                        //printf("%d %d\n", innerGateway.x, innerGateway.z);
+                        //printf("%d %d\n", outerGateway.x, outerGateway.z);
+                        //printf("%d %d %d %d\n", endCityBoundingBox.first.x, endCityBoundingBox.first.z, endCityBoundingBox.second.x, endCityBoundingBox.second.z);
                         goto nextStructureSeed;
                     }
                 }
