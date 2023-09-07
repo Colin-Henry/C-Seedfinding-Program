@@ -26,8 +26,6 @@ typedef struct
 DoublePos origCoords = {{-96, -96}, {96, 96}};
 int STRUCTS[] = {Bastion, Fortress, End_City};
 const int MC = MC_1_16_1;
-const uint64_t START_STRUCTURE_SEED = 0;
-const uint64_t STRUCTURE_SEEDS_TO_CHECK = 65536; //2^16 = 65536, 2^32 = 4294967296, 2^48 = 281474976710656 ---- Note to myself this is basically useless
 const int UPPER_BITS_TO_CHECK = 1;
 
 int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int result, Pos* bastionCoordinates, Pos* fortressCoordinates, Pos* endCityCoordinates);
@@ -89,17 +87,10 @@ int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, Dou
     return result;
 }
 
-void getSeedRNG(uint64_t *seed, uint64_t value);
-
-void getSeedRNG(uint64_t *seed, uint64_t value)
-{
-    value = (*seed ^ 0x5deece66d) & ((1ULL << 48) - 1);
-}
-
 Pos mainIslandGateway(uint64_t lower48)
 {
 	uint64_t rng = 0;               // some initial value idk
-	getSeedRNG(&rng, lower48);            // new Random(seed);
+	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
 	int gateway_x = (int)(96.0 * cos(angle));
@@ -114,7 +105,7 @@ Pos mainIslandGateway(uint64_t lower48)
 Pos linkedGateway(uint64_t lower48)
 {
 	uint64_t rng = 0;               // some initial value idk
-	getSeedRNG(&rng, lower48);            // new Random(seed);
+	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
 	int gateway_x = (int)(1024.0 * cos(angle));
@@ -190,7 +181,7 @@ int main(int argc, char **argv)
     int i = 0;
     data[i].candidatesCount = 0;
     data[i].positionsCount = 0;
-
+    
     Pos bastionCoordinates[4];
     Pos fortressCoordinates[4];
     Pos endCityCoordinates[9];
@@ -274,14 +265,59 @@ int main(int argc, char **argv)
 
 		            Pos outerGateway;
 		            outerGateway = linkedGateway(lower48);
-                    DoublePos endCityBoundingBox = {{-96 + outerGateway.x, -96 + outerGateway.z}, {96 + outerGateway.x, 96 + outerGateway.z}};
-                    result = structureChecker(lower48, STRUCTS, 2, MC, endCityBoundingBox, data, result, bastionCoordinates, fortressCoordinates, endCityCoordinates);
+                    origCoords = (DoublePos) {{-96 + outerGateway.x, -96 + outerGateway.z}, {96 + outerGateway.x, 96 + outerGateway.z}};
+
+                    for (int i = 2; i < 3; ++i) 
+                    {
+                        StructureConfig currentStructureConfig; 
+                        
+                        if (!getStructureConfig(STRUCTS[i], MC, &currentStructureConfig)) 
+                        {
+                            printf("ERROR: Structure #%d in the STRUCTS array cannot exist in the specified version.\n", i);
+                            exit(1);
+                        }
+                        
+                        switch (currentStructureConfig.regionSize) {
+                        case 32:
+                            data[i].regionCoords.first.x  = origCoords.first.x  >> 9;
+                            data[i].regionCoords.first.z  = origCoords.first.z  >> 9;
+                            data[i].regionCoords.second.x = origCoords.second.x >> 9;
+                            data[i].regionCoords.second.z = origCoords.second.z >> 9;
+                            break;
+                        case 1:
+                            data[i].regionCoords.first.x  = origCoords.first.x  >> 4;
+                            data[i].regionCoords.first.z  = origCoords.first.z  >> 4;
+                            data[i].regionCoords.second.x = origCoords.second.x >> 4;
+                            data[i].regionCoords.second.z = origCoords.second.z >> 4;
+                            break;
+                        default:
+                            data[i].regionCoords.first.x  = (origCoords.first.x  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x  < 0);
+                            data[i].regionCoords.first.z  = (origCoords.first.z  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z  < 0);
+                            data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
+                            data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
+                            break;
+                        }
+                        
+                        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER   :
+                                            currentStructureConfig.properties & STRUCT_END    ? DIM_END      :
+                                                                                                DIM_OVERWORLD;
+                    }
+                    
+                    result = structureChecker(lower48, STRUCTS, 2, MC, origCoords, data, result, bastionCoordinates, fortressCoordinates, endCityCoordinates);
                     if (result == 1) 
                     {
                         continue;
-                    } 
+                    }
                     else 
                     {
+                        int lastIndex = data[i].candidatesCount - 1;
+                        int lastX = endCityCoordinates[lastIndex].x;
+                        int lastZ = endCityCoordinates[lastIndex].z;
+
+                        SurfaceNoise sn;
+                        initSurfaceNoise(&sn /* Memory address of surface noise */, 1 /* World dimension */, lower48);
+
+                        if (isViableEndCityTerrain(&g, &sn, lastX, lastZ)) continue;
                         int allChecksFailed = 1;
                         
                         for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) 
