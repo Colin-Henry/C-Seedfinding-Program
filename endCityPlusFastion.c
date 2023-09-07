@@ -313,12 +313,6 @@ int main(int argc, char **argv)
                         int lastIndex = data[i].candidatesCount - 1;
                         int lastX = endCityCoordinates[lastIndex].x;
                         int lastZ = endCityCoordinates[lastIndex].z;
-
-                        SurfaceNoise sn;
-                        initSurfaceNoise(&sn, 1 /* World dimension */, lower48);
-
-                        if (isViableEndCityTerrain(&g, &sn, lastX, lastZ)) continue;
-
                         int deltaX = outerGateway.x - lastX;
                         int deltaZ = outerGateway.z - lastZ;
                         int distanceSquared = deltaX * deltaX + deltaZ * deltaZ;
