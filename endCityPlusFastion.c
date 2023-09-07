@@ -315,9 +315,22 @@ int main(int argc, char **argv)
                         int lastZ = endCityCoordinates[lastIndex].z;
 
                         SurfaceNoise sn;
-                        initSurfaceNoise(&sn /* Memory address of surface noise */, 1 /* World dimension */, lower48);
+                        initSurfaceNoise(&sn, 1 /* World dimension */, lower48);
 
                         if (isViableEndCityTerrain(&g, &sn, lastX, lastZ)) continue;
+
+                        int deltaX = outerGateway.x - lastX;
+                        int deltaZ = outerGateway.z - lastZ;
+                        int distanceSquared = deltaX * deltaX + deltaZ * deltaZ;
+                        int maxDistanceSquared = 96 * 96;
+                        if (distanceSquared <= maxDistanceSquared) 
+                        {
+                        } 
+                        else 
+                        {
+                            goto nextStructureSeed;
+                        }
+                        
                         int allChecksFailed = 1;
                         
                         for (uint64_t upper16 = 0; upper16 < UPPER_BITS_TO_CHECK; ++upper16) 
