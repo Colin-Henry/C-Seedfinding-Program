@@ -37,6 +37,39 @@ int structureChecker(int lower48, int STRUCTS[], int structureIndex, int MC, Dou
     data[i].candidatesCount = 0;
     int currentStructure = STRUCTS[structureIndex];
 
+    StructureConfig currentStructureConfig;
+        if (!getStructureConfig(STRUCTS[i], MC, &currentStructureConfig)) 
+        {
+            printf("ERROR: Structure #%d in the STRUCTS array cannot exist in the specified version.\n", i);
+            exit(1);
+        }
+
+        switch (currentStructureConfig.regionSize) 
+        {
+            case 32:
+                data[i].regionCoords.first.x = origCoords.first.x >> 9;
+                data[i].regionCoords.first.z = origCoords.first.z >> 9;
+                data[i].regionCoords.second.x = origCoords.second.x >> 9;
+                data[i].regionCoords.second.z = origCoords.second.z >> 9;
+                break;
+            case 1:
+                data[i].regionCoords.first.x = origCoords.first.x >> 4;
+                data[i].regionCoords.first.z = origCoords.first.z >> 4;
+                data[i].regionCoords.second.x = origCoords.second.x >> 4;
+                data[i].regionCoords.second.z = origCoords.second.z >> 4;
+                break;
+            default:
+                data[i].regionCoords.first.x = (origCoords.first.x / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x < 0);
+                data[i].regionCoords.first.z = (origCoords.first.z / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z < 0);
+                data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
+                data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
+                break;
+        }
+
+        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER :
+                            currentStructureConfig.properties & STRUCT_END    ? DIM_END :
+                                                                                DIM_OVERWORLD;
+
     for (int regX = data[i].regionCoords.first.x; regX <= data[i].regionCoords.second.x; ++regX) 
     {
         for (int regZ = data[i].regionCoords.first.z; regZ <= data[i].regionCoords.second.z; ++regZ) 
@@ -166,8 +199,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    uint64_t START_STRUCTURE_SEED, STRUCTURE_SEEDS_TO_CHECK;
-    if (fscanf(fp, "%" SCNu64 "%" SCNu64, &START_STRUCTURE_SEED, &STRUCTURE_SEEDS_TO_CHECK) != 2) 
+    uint64_t startingStructureSeed, endingStructureSeed;
+    if (fscanf(fp, "%" SCNu64 "%" SCNu64, &startingStructureSeed, &endingStructureSeed) != 2) 
     {
         printf("Error: Unable to read seeds from file.\n");
         fclose(fp);
@@ -186,42 +219,6 @@ int main(int argc, char **argv)
     Pos fortressCoordinates[4];
     Pos endCityCoordinates[9];
 
-    for (int i = 0; i < numberOfStructs; ++i) 
-    {
-        StructureConfig currentStructureConfig;
-        if (!getStructureConfig(STRUCTS[i], MC, &currentStructureConfig)) 
-        {
-            printf("ERROR: Structure #%d in the STRUCTS array cannot exist in the specified version.\n", i);
-            exit(1);
-        }
-
-        switch (currentStructureConfig.regionSize) 
-        {
-            case 32:
-                data[i].regionCoords.first.x = origCoords.first.x >> 9;
-                data[i].regionCoords.first.z = origCoords.first.z >> 9;
-                data[i].regionCoords.second.x = origCoords.second.x >> 9;
-                data[i].regionCoords.second.z = origCoords.second.z >> 9;
-                break;
-            case 1:
-                data[i].regionCoords.first.x = origCoords.first.x >> 4;
-                data[i].regionCoords.first.z = origCoords.first.z >> 4;
-                data[i].regionCoords.second.x = origCoords.second.x >> 4;
-                data[i].regionCoords.second.z = origCoords.second.z >> 4;
-                break;
-            default:
-                data[i].regionCoords.first.x = (origCoords.first.x / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x < 0);
-                data[i].regionCoords.first.z = (origCoords.first.z / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z < 0);
-                data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
-                data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
-                break;
-        }
-
-        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER :
-                            currentStructureConfig.properties & STRUCT_END    ? DIM_END :
-                                                                                DIM_OVERWORLD;
-    }
-
     Generator g;
     setupGenerator(&g, MC, 0);
 
@@ -229,7 +226,7 @@ int main(int argc, char **argv)
     int result = 0;
     uint64_t seed;
 
-    for (uint64_t lower48 = START_STRUCTURE_SEED; lower48 < STRUCTURE_SEEDS_TO_CHECK; ++lower48) 
+    for (uint64_t lower48 = startingStructureSeed; lower48 < endingStructureSeed; ++lower48) 
     {
         DoublePos bastionBoundingBox = {{-96, -96}, {96, 96}};
 
@@ -333,6 +330,10 @@ int main(int argc, char **argv)
                             for (int i = 0; i < numberOfStructs; ++i) 
                             {
                                 data[i].positionsCount = 0;
+                                applySeed(&g, DIM_END, lower48);
+                                SurfaceNoise sn;
+                                initSurfaceNoise(&sn, 1, lower48);
+                                if (isViableEndCityTerrain(&g, &sn, lastX, lastZ)) goto nextStructureSeed;
                                 if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
                                 for (int j = 0; j < data[i].candidatesCount; ++j) 
                                 {
