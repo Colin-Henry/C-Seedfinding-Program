@@ -264,42 +264,6 @@ int main(int argc, char **argv)
 		            outerGateway = linkedGateway(lower48);
                     origCoords = (DoublePos) {{-96 + outerGateway.x, -96 + outerGateway.z}, {96 + outerGateway.x, 96 + outerGateway.z}};
 
-                    for (int i = 2; i < 3; ++i) 
-                    {
-                        StructureConfig currentStructureConfig; 
-                        
-                        if (!getStructureConfig(STRUCTS[i], MC, &currentStructureConfig)) 
-                        {
-                            printf("ERROR: Structure #%d in the STRUCTS array cannot exist in the specified version.\n", i);
-                            exit(1);
-                        }
-                        
-                        switch (currentStructureConfig.regionSize) {
-                        case 32:
-                            data[i].regionCoords.first.x  = origCoords.first.x  >> 9;
-                            data[i].regionCoords.first.z  = origCoords.first.z  >> 9;
-                            data[i].regionCoords.second.x = origCoords.second.x >> 9;
-                            data[i].regionCoords.second.z = origCoords.second.z >> 9;
-                            break;
-                        case 1:
-                            data[i].regionCoords.first.x  = origCoords.first.x  >> 4;
-                            data[i].regionCoords.first.z  = origCoords.first.z  >> 4;
-                            data[i].regionCoords.second.x = origCoords.second.x >> 4;
-                            data[i].regionCoords.second.z = origCoords.second.z >> 4;
-                            break;
-                        default:
-                            data[i].regionCoords.first.x  = (origCoords.first.x  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x  < 0);
-                            data[i].regionCoords.first.z  = (origCoords.first.z  / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z  < 0);
-                            data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
-                            data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
-                            break;
-                        }
-                        
-                        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER   :
-                                            currentStructureConfig.properties & STRUCT_END    ? DIM_END      :
-                                                                                                DIM_OVERWORLD;
-                    }
-                    
                     result = structureChecker(lower48, STRUCTS, 2, MC, origCoords, data, result, bastionCoordinates, fortressCoordinates, endCityCoordinates);
                     if (result == 1) 
                     {
@@ -368,9 +332,6 @@ int main(int argc, char **argv)
                             goto nextStructureSeed;
                         }
                         printf("%" PRId64 "\n", seed);
-                        //printf("%d %d\n", innerGateway.x, innerGateway.z);
-                        //printf("%d %d\n", outerGateway.x, outerGateway.z);
-                        //printf("%d %d %d %d\n", endCityBoundingBox.first.x, endCityBoundingBox.first.z, endCityBoundingBox.second.x, endCityBoundingBox.second.z);
                         goto nextStructureSeed;
                     }
                 }
