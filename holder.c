@@ -238,7 +238,7 @@ int main(int argc, char **argv)
             Pos innerGateway = mainIslandGateway(lower48);
             int innerGatewayResult;
             innerGatewayResult = findMainIslandGateway(innerGateway, goodMainIslandGatewayPositions);
-            if (innerGatewayResult != 1) goto nextStructureSeed;
+            if (innerGatewayResult != 1) continue;
             
             Pos outerGateway;
             outerGateway = linkedGateway(lower48);
@@ -278,17 +278,15 @@ int main(int argc, char **argv)
             if (allChecksFailed) continue;
 
             biome = getBiomeAt(&g, 1, bastionCoordinates[bastionInstance].x, 64, bastionCoordinates[bastionInstance].z);
-            if (biome == basalt_deltas) goto nextStructureSeed;
+            if (biome == basalt_deltas) continue;
 
             biome = getBiomeAt(&g, 1, fortressCoordinates[bastionInstance].x, 64, fortressCoordinates[bastionInstance].z); 
-            if (biome != soul_sand_valley) goto nextStructureSeed;
+            if (biome != soul_sand_valley) continue;
 
             printf("%" PRId64 "\n", seed);
             //printf("%d %d\n", outerGateway.x, outerGateway.z);
-            goto nextStructureSeed;
+            continue;
         }
-
-        nextStructureSeed:
 
         for (int structureCounter = 0; structureCounter < numberOfStructures; ++structureCounter) 
         {
