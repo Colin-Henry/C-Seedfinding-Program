@@ -127,11 +127,11 @@ Pos mainIslandGateway(uint64_t lower48)
 	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
-	int gateway_x = (int)(96.0 * cos(angle)); //Quick note I didn't floor these. I never checked in source code if they're floored,
-    int gateway_z = (int)(96.0 * sin(angle)); //but in-game it doesn't look like it. The gateway position array is correct according to in-game
+	int gatewayX = (int)(96.0 * cos(angle)); //Quick note I didn't floor these. I never checked in source code if they're floored,
+    int gatewayZ = (int)(96.0 * sin(angle)); //but in-game it doesn't look like it. The gateway position array is correct according to in-game
 	Pos result;
-	result.x = gateway_x;
-	result.z = gateway_z;
+	result.x = gatewayX;
+	result.z = gatewayZ;
 
     return result;
 }
@@ -142,8 +142,8 @@ Pos linkedGateway(uint64_t lower48)
 	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
-	int gateway_x = floor((1024.0 * cos(angle)));
-    int gateway_z = floor((1024.0 * sin(angle)));
+	int gatewayX = (1024.0 * cos(angle));
+    int gatewayZ = (1024.0 * sin(angle));
 
     int noiseResultSum = 0;
 
@@ -155,7 +155,7 @@ Pos linkedGateway(uint64_t lower48)
 
     int emptyChunk = 0;
 
-    for (int n = 0; n < 16; n++) //Checking away from the main end island to see if there are blocks
+    for (int n = 0; n < 16; n++) //Checking towards from the main end island to see if there are blocks (in case the original vector plopped me in the middle of a huge island)
     {
         int blockCheckResult = 0;
 
@@ -163,7 +163,7 @@ Pos linkedGateway(uint64_t lower48)
         {
             for (int zIterator = 0; zIterator < 16; zIterator++)
             {
-                blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gateway_x + xIterator, gateway_z + zIterator);
+                blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gatewayX + xIterator, gatewayZ + zIterator);
                 if (blockCheckResult > 0)
                 {
                     goto chunkHasBlocks;
@@ -175,22 +175,21 @@ Pos linkedGateway(uint64_t lower48)
 
         if (blockCheckResult > 0) //Move forward a chunk
         {
-            gateway_x = floor(gateway_x - (16.0 * cos(angle))); 
-            gateway_z = floor(gateway_z - (16.0 * sin(angle)));
+            gatewayX = gatewayX - (16.0 * cos(angle)); 
+            gatewayZ = gatewayZ - (16.0 * sin(angle));
         }
         else
         {
             emptyChunk = 1;
+            gatewayX = floor(gatewayX);
+            gatewayZ = floor(gatewayZ);
             break; //Empty chunk found
         }   
     }
 
     if (emptyChunk != 1)
     {
-    gateway_x = (int) floor((1024.0 * cos(angle)));
-    gateway_z = (int) floor((1024.0 * sin(angle)));
-
-        for (int n = 0; n < 16; n++) //Checking away from the main end island to see if there are blocks
+        for (int n = 0; n < 16; n++) //Checking away from the main end island to see if there are blocks (in case the original vector plopped me in the middle of the void)
         {
             int blockCheckResult = 0;
 
@@ -198,7 +197,7 @@ Pos linkedGateway(uint64_t lower48)
             {
                 for (int zIterator = 0; zIterator < 16; zIterator++)
                 {
-                    blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gateway_x + xIterator, gateway_z + zIterator);
+                    blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gatewayX + xIterator, gatewayZ + zIterator);
                     if (blockCheckResult > 0)
                     {
                         goto chunkHasBlocks2;
@@ -210,19 +209,21 @@ Pos linkedGateway(uint64_t lower48)
 
             if (blockCheckResult > 0) //Move forward a chunk
             {
-                gateway_x = floor(gateway_x + (16.0 * cos(angle))); 
-                gateway_z = floor(gateway_z + (16.0 * sin(angle)));
+                gatewayX = gatewayX + (16.0 * cos(angle)); 
+                gatewayZ = gatewayZ + (16.0 * sin(angle));
             }
             else
             {
+                gatewayX = floor(gatewayX);
+                gatewayZ = floor(gatewayZ);
                 break; //Empty chunk found
             }   
         }
     }
 
 	Pos result;
-	result.x = gateway_x;
-	result.z = gateway_z;
+	result.x = gatewayX;
+	result.z = gatewayZ;
     return result;
 }
 
