@@ -127,8 +127,8 @@ Pos mainIslandGateway(uint64_t lower48)
 	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
-	int gatewayX = (int)(96.0 * cos(angle)); //Quick note I didn't floor these. I never checked in source code if they're floored,
-    int gatewayZ = (int)(96.0 * sin(angle)); //but in-game it doesn't look like it. The gateway position array is correct according to in-game
+	double gatewayX = (int)(96.0 * cos(angle));
+    double gatewayZ = (int)(96.0 * sin(angle));
 	Pos result;
 	result.x = gatewayX;
 	result.z = gatewayZ;
@@ -142,8 +142,10 @@ Pos linkedGateway(uint64_t lower48)
 	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
-	int gatewayX = (1024.0 * cos(angle));
-    int gatewayZ = (1024.0 * sin(angle));
+	double gatewayX = (1024.0 * cos(angle));
+    double gatewayZ = (1024.0 * sin(angle));
+    (int) gatewayX >> 4;
+    (int) gatewayZ >> 4;
 
     int noiseResultSum = 0;
 
@@ -175,14 +177,14 @@ Pos linkedGateway(uint64_t lower48)
 
         if (blockCheckResult > 0) //Move forward a chunk
         {
-            gatewayX = gatewayX - (16.0 * cos(angle)); 
-            gatewayZ = gatewayZ - (16.0 * sin(angle));
+            gatewayX = (double) gatewayX - (16.0 * cos(angle)); 
+            gatewayZ = (double) gatewayZ - (16.0 * sin(angle));
         }
         else
         {
             emptyChunk = 1;
-            gatewayX = floor(gatewayX);
-            gatewayZ = floor(gatewayZ);
+            (int) gatewayX >> 4;
+            (int) gatewayZ >> 4;
             break; //Empty chunk found
         }   
     }
@@ -209,13 +211,13 @@ Pos linkedGateway(uint64_t lower48)
 
             if (blockCheckResult > 0) //Move forward a chunk
             {
-                gatewayX = gatewayX + (16.0 * cos(angle)); 
-                gatewayZ = gatewayZ + (16.0 * sin(angle));
+                gatewayX = (double) gatewayX + (16.0 * cos(angle)); 
+                gatewayZ = (double) gatewayZ + (16.0 * sin(angle));
             }
             else
             {
-                gatewayX = floor(gatewayX);
-                gatewayZ = floor(gatewayZ);
+                (int) gatewayX >> 4;
+                (int) gatewayZ >> 4;
                 break; //Empty chunk found
             }   
         }
