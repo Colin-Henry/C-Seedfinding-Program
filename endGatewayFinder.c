@@ -146,9 +146,7 @@ Pos linkedGateway(uint64_t lower48)
     double gatewayZ = (1024.0 * sin(angle));
     (int) gatewayX >> 4;
     (int) gatewayZ >> 4;
-
-    int noiseResultSum = 0;
-
+    
     EndNoise en;
     setEndSeed(&en, MC_1_16_1, lower48);
 
@@ -179,12 +177,16 @@ Pos linkedGateway(uint64_t lower48)
         {
             gatewayX = (double) gatewayX - (16.0 * cos(angle)); 
             gatewayZ = (double) gatewayZ - (16.0 * sin(angle));
+            int tempGatewayX = floor(gatewayX);
+            tempGatewayX >>= 4;
+            tempGatewayX <<= 4;
+            int tempGatewayZ = floor(gatewayZ);
+            tempGatewayZ >>= 4;
+            tempGatewayZ <<= 4;
         }
         else
         {
             emptyChunk = 1;
-            (int) gatewayX >> 4;
-            (int) gatewayZ >> 4;
             break; //Empty chunk found
         }   
     }
@@ -213,11 +215,15 @@ Pos linkedGateway(uint64_t lower48)
             {
                 gatewayX = (double) gatewayX + (16.0 * cos(angle)); 
                 gatewayZ = (double) gatewayZ + (16.0 * sin(angle));
+                int tempGatewayX = floor(gatewayX);
+                tempGatewayX >>= 4;
+                tempGatewayX <<= 4;
+                int tempGatewayZ = floor(gatewayZ);
+                tempGatewayZ >>= 4;
+                tempGatewayZ <<= 4;
             }
             else
             {
-                (int) gatewayX >> 4;
-                (int) gatewayZ >> 4;
                 break; //Empty chunk found
             }   
         }
