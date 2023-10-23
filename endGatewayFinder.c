@@ -142,10 +142,9 @@ Pos linkedGateway(uint64_t lower48)
 	setSeed(&rng, lower48);            // new Random(seed);
 	int rngResult = nextInt(&rng, 20); // nextInt(20);
 	double angle = 2.0 * (-1 * PI + 0.15707963267948966 * (rngResult));
-	double gatewayX = (1024.0 * cos(angle));
-    double gatewayZ = (1024.0 * sin(angle));
-    (int) gatewayX >> 4;
-    (int) gatewayZ >> 4;
+	double gatewayX = 2032;
+    double gatewayZ = 2080;
+
     
     EndNoise en;
     setEndSeed(&en, MC_1_16_1, lower48);
@@ -166,6 +165,7 @@ Pos linkedGateway(uint64_t lower48)
                 blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gatewayX + xIterator, gatewayZ + zIterator);
                 if (blockCheckResult > 0)
                 {
+                    printf("Height %d at %lf, %lf\n", blockCheckResult, gatewayX + xIterator, gatewayZ + zIterator);
                     goto chunkHasBlocks;
                 }
                 printf("Height %d at %lf, %lf\n", blockCheckResult, gatewayX + xIterator, gatewayZ + zIterator);
