@@ -155,7 +155,7 @@ Pos linkedGateway(uint64_t lower48)
 
     int emptyChunk = 0;
 
-    for (int n = 0; n < 16; n++) //Checking towards from the main end island to see if there are blocks (in case the original vector plopped me in the middle of a huge island)
+    for (int n = 0; n < 16; n++) //Checking towards the main end island to see if there are blocks (in case the original vector plopped me in the middle of a huge island)
     {
         int blockCheckResult = 0;
 
@@ -168,12 +168,13 @@ Pos linkedGateway(uint64_t lower48)
                 {
                     goto chunkHasBlocks;
                 }
+                printf("Height %d at %lf, %lf\n", blockCheckResult, gatewayX + xIterator, gatewayZ + zIterator);
             }
         }
         
         chunkHasBlocks:
 
-        if (blockCheckResult > 0) //Move forward a chunk
+        if (blockCheckResult > 0) //Move backward a chunk
         {
             gatewayX = (double) gatewayX - (16.0 * cos(angle)); 
             gatewayZ = (double) gatewayZ - (16.0 * sin(angle));
@@ -206,6 +207,7 @@ Pos linkedGateway(uint64_t lower48)
                     {
                         goto chunkHasBlocks2;
                     }
+                    printf("Height %d at %lf, %lf\n", blockCheckResult, gatewayX, gatewayZ);
                 }
             }
             
@@ -335,7 +337,7 @@ int main(int argc, char **argv)
                 seed = lower48 | (upper16 << 48);
         }
         printf("Seed: %" PRId64 "", seed);
-        printf("    Outer Gateway: %d %d\n", outerGateway.x, outerGateway.z);
+        printf("    Outer Gateway: %d %d\n\n", outerGateway.x, outerGateway.z);
 
         nextStructureSeed:
 
