@@ -169,11 +169,11 @@ Pos mainIslandGateway(uint64_t lower48)
 
 smallEndIsland isSmallEndIsland(uint64_t lower48)
 {
-    smallEndIsland smallEndIslandInfo;
+    smallEndIsland smallEndIslandInfo; //This data structure holds 8 things - a true/false for if both islands generated, and their respective xyz coords
     uint64_t rng = 0;               
 	setSeed(&rng, lower48);            
-	int rngResult = nextInt(&rng, 14); //Checking for 1/14 chance to generate 
-    if (rngResult =! 0) //No small island in that chunk
+	int rngResult = nextInt(&rng, lower48); //Checking for 1/14 chance to generate 
+    if (rngResult > 0) //No small island in that chunk
     {
         smallEndIslandInfo.island1 = false;
     }
@@ -183,9 +183,9 @@ smallEndIsland isSmallEndIsland(uint64_t lower48)
         smallEndIslandInfo.y1 = (&rng, 16) + 55;
         smallEndIslandInfo.z1 = (&rng, 16);
         
-        rngResult = nextInt(&rng, 4);
+        rngResult = nextInt(&rng, lower48);
 
-        if (rngResult =! 0) //No second island
+        if (rngResult > 0) //No second island
         {
             smallEndIslandInfo.island2 = false;
         }
@@ -220,10 +220,26 @@ Pos linkedGateway(uint64_t lower48)
     initSurfaceNoise(&sn, DIM_END, lower48);
 
     int blockCheckResult = 0;
+    bool chunkHasBlocks = false;
     bool foundChunk = false;
+
+    bool island1 = isSmallEndIsland(lower48).island1;
+    int xIsland1 = isSmallEndIsland(lower48).x1;
+    int yIsland1 = isSmallEndIsland(lower48).y1;
+    int zIsland1 = isSmallEndIsland(lower48).z1;
+    bool island2 = isSmallEndIsland(lower48).island2;
+    int xIsland2 = isSmallEndIsland(lower48).x2;
+    int yIsland2 = isSmallEndIsland(lower48).y2;
+    int zIsland2 = isSmallEndIsland(lower48).z2;
 
     for (int n = 0; n < 16; n++) //Checking towards the main end island to see if there are blocks (in case the original vector plopped me in the middle of a huge island)
     {
+        if (island1)
+        {
+            foundChunk = true;
+            break;
+        }
+
         for (int xIterator = 0; xIterator < 16; xIterator++)
         {
             for (int zIterator = 0; zIterator < 16; zIterator++)
@@ -231,32 +247,47 @@ Pos linkedGateway(uint64_t lower48)
                 blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gatewayVector.x + xIterator, gatewayVector.z + zIterator);
                 if (blockCheckResult > 0)
                 {
-                    foundChunk = true;
+                    chunkHasBlocks = true;
+                    break;
                 }
+                else
+                {
+                    chunkHasBlocks = false;
+                }
+            }
+            if (chunkHasBlocks)
+            {
+                break;
             }
         }
 
-        if (blockCheckResult > 0) //Move toward main island a chunk
+        if (chunkHasBlocks) //Move toward main island a chunk
         {
-            gatewayVector.x = gatewayVector.x - (16.0 * cos(gatewayAngle)); 
-            gatewayVector.z = gatewayVector.z - (16.0 * sin(gatewayAngle));
+            gatewayVector.x -= (16.0 * cos(gatewayAngle)); 
+            gatewayVector.z -= (16.0 * sin(gatewayAngle));
         }
         else
         {
+            gatewayVector.x += (16.0 * cos(gatewayAngle)); //Going back to the last chunk with blocks in it
+            gatewayVector.z += (16.0 * sin(gatewayAngle));
+            foundChunk = true;
             break; //Chunk found
-        }   
+        }
     }
 
-    if (foundChunk = false)
+    if (!foundChunk)
     {
-        gatewayVector.x = normalizedVector.x;
-        gatewayVector.z = normalizedVector.z;
-        gatewayVector.x *= 1024;
-        gatewayVector.z *= 1024;
-        
+        gatewayVector.x = normalizedVector.x * 1024;
+        gatewayVector.z = normalizedVector.z * 1024;        
 
         for (int n = 0; n < 16; n++) //Checking away from the main end island to see if there are blocks (in case the original vector plopped me in the middle of the void)
         {
+            if (island1)
+            {
+                foundChunk = true;
+                break;
+            }
+
             int blockCheckResult = 0;
 
             for (int xIterator = 0; xIterator < 16; xIterator++)
@@ -266,24 +297,36 @@ Pos linkedGateway(uint64_t lower48)
                     blockCheckResult = getSurfaceHeightEnd(MC_1_16_1, lower48, gatewayVector.x + xIterator, gatewayVector.z + zIterator);
                     if (blockCheckResult > 0)
                     {
-                        goto chunkHasBlocks2;
+                        chunkHasBlocks = true;
+                        break;
+                    }
+                    else
+                    {
+                        chunkHasBlocks = false;
                     }
                 }
+                if (chunkHasBlocks)
+                {
+                    break;
+                }
             }
-            
-            chunkHasBlocks2:
 
-            if (blockCheckResult > 0) //Move away from main island a chunk
+            if (chunkHasBlocks) //Move away from main island a chunk
             {
-                gatewayVector.x = gatewayVector.x + (16.0 * cos(gatewayAngle)); 
-                gatewayVector.z = gatewayVector.z + (16.0 * sin(gatewayAngle));
+                gatewayVector.x += (16.0 * cos(gatewayAngle)); 
+                gatewayVector.z += (16.0 * sin(gatewayAngle));
             }
             else
             {
+                gatewayVector.x -= (16.0 * cos(gatewayAngle)); //Going back to the last chunk with blocks in it
+                gatewayVector.z -= (16.0 * sin(gatewayAngle));
+                foundChunk = true;
                 break; //Chunk found
             }   
         }
     }
+
+    printf("Gateway: %lf, %lf\n", gatewayVector.x, gatewayVector.z);
 
     int gatewayX = round(gatewayVector.x);
     int gatewayZ = round(gatewayVector.z);
@@ -323,6 +366,8 @@ Pos linkedGateway(uint64_t lower48)
 	Pos result;
 	result.x = gatewayX;
 	result.z = gatewayZ;
+
+    printf("Gateway: %d, %d\n", gatewayX, gatewayZ);
 
    return result;
 }
