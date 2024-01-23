@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include "finders.c"
 #include "generator.c"
 #include "biome_tree.c"
@@ -24,13 +25,53 @@ typedef struct
 } StructData;
 
 DoublePos origCoords = {{-96, -96}, {96, 96}};
+DoublePos bastionBoundingBox = {{-96, -96}, {96, 96}};
 int structs[] = {Bastion, Fortress};
 const int MC = MC_1_16_1;
 const int upperBits = 1;
+const int numberOfStructs = sizeof(structs) / sizeof(*structs);
 int structureIndex = 0;
+int biome = 0;
+bool result = false;
 
-int structureChecker(int lower48, int structs[], int structureIndex, int MC, DoublePos origCoords, StructData data[], int result, Pos* structureCoordinates) 
+bool structureChecker(int lower48, int structs[], int structureIndex, int MC, DoublePos origCoords, StructData data[], bool result, Pos* structureCoordinates) 
 {
+    for (int i = 0; i < numberOfStructs; ++i) 
+    {
+        StructureConfig currentStructureConfig;
+        if (!getStructureConfig(structs[i], MC, &currentStructureConfig)) 
+        {
+            printf("ERROR: Structure #%d in the structs array cannot exist in the specified version.\n", i);
+            exit(1);
+        }
+
+        switch (currentStructureConfig.regionSize) 
+        {
+            case 32:
+                data[i].regionCoords.first.x = origCoords.first.x >> 9;
+                data[i].regionCoords.first.z = origCoords.first.z >> 9;
+                data[i].regionCoords.second.x = origCoords.second.x >> 9;
+                data[i].regionCoords.second.z = origCoords.second.z >> 9;
+                break;
+            case 1:
+                data[i].regionCoords.first.x = origCoords.first.x >> 4;
+                data[i].regionCoords.first.z = origCoords.first.z >> 4;
+                data[i].regionCoords.second.x = origCoords.second.x >> 4;
+                data[i].regionCoords.second.z = origCoords.second.z >> 4;
+                break;
+            default:
+                data[i].regionCoords.first.x = (origCoords.first.x / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x < 0);
+                data[i].regionCoords.first.z = (origCoords.first.z / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z < 0);
+                data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
+                data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
+                break;
+        }
+
+        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER :
+                            currentStructureConfig.properties & STRUCT_END    ? DIM_END :
+                                                                                DIM_OVERWORLD;
+    }
+
     Pos p;
     int i = structureIndex; // Use the correct data element corresponding to the structure being checked
     data[i].candidatesCount = 0;
@@ -54,11 +95,11 @@ int structureChecker(int lower48, int structs[], int structureIndex, int MC, Dou
 
     if (!data[i].candidatesCount) 
     {
-        result = 1;
+        result = false;
     } 
     else if (structureIndex == 0) 
     {
-        result = 2;
+        result = true;
         for (int j = 0; j < data[i].candidatesCount; ++j) 
         {
             structureCoordinates[j].x = data[i].candidates[j].x;
@@ -67,7 +108,7 @@ int structureChecker(int lower48, int structs[], int structureIndex, int MC, Dou
     } 
     else if (structureIndex == 1) 
     {
-        result = 2;
+        result = true;
         for (int j = 0; j < data[i].candidatesCount; ++j) 
         {
             structureCoordinates[j].x = data[i].candidates[j].x;
@@ -122,7 +163,6 @@ int main(int argc, char **argv)
     }
     fclose(fp);
     
-    const int numberOfStructs = sizeof(structs) / sizeof(*structs);
     StructData data[numberOfStructs];
 
     int i = 0;
@@ -132,119 +172,68 @@ int main(int argc, char **argv)
     Pos bastionCoordinates[4];
     Pos fortressCoordinates[4];
 
-    for (int i = 0; i < numberOfStructs; ++i) 
-    {
-        StructureConfig currentStructureConfig;
-        if (!getStructureConfig(structs[i], MC, &currentStructureConfig)) 
-        {
-            printf("ERROR: Structure #%d in the structs array cannot exist in the specified version.\n", i);
-            exit(1);
-        }
-
-        switch (currentStructureConfig.regionSize) 
-        {
-            case 32:
-                data[i].regionCoords.first.x = origCoords.first.x >> 9;
-                data[i].regionCoords.first.z = origCoords.first.z >> 9;
-                data[i].regionCoords.second.x = origCoords.second.x >> 9;
-                data[i].regionCoords.second.z = origCoords.second.z >> 9;
-                break;
-            case 1:
-                data[i].regionCoords.first.x = origCoords.first.x >> 4;
-                data[i].regionCoords.first.z = origCoords.first.z >> 4;
-                data[i].regionCoords.second.x = origCoords.second.x >> 4;
-                data[i].regionCoords.second.z = origCoords.second.z >> 4;
-                break;
-            default:
-                data[i].regionCoords.first.x = (origCoords.first.x / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x < 0);
-                data[i].regionCoords.first.z = (origCoords.first.z / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z < 0);
-                data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
-                data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
-                break;
-        }
-
-        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER :
-                            currentStructureConfig.properties & STRUCT_END    ? DIM_END :
-                                                                                DIM_OVERWORLD;
-    }
-
     Generator g;
     setupGenerator(&g, MC, 0);
-
-    int biome = 0;
-    int result = 0;
+    
     uint64_t seed;
 
     for (uint64_t lower48 = startingStructureSeed; lower48 < endingStructureSeed; ++lower48) 
     {
-        DoublePos bastionBoundingBox = {{-96, -96}, {96, 96}};
-        int structureIndex = 0;
+        bool checkFailed = true;
 
         result = structureChecker(lower48, structs, 0, MC, bastionBoundingBox, data, result, bastionCoordinates);
-        if (result == 1) 
+        if (result == false) continue; // If result is true, structure generated. If false, structure did not generate in bounding box
+
+        for (int bastionInstance = 0; bastionInstance < data[0].candidatesCount; ++bastionInstance) 
         {
-            continue;
-        } 
-        else 
-        {
-            for (int bastionInstance = 0; bastionInstance < data[0].candidatesCount; ++bastionInstance) 
+            DoublePos fortressBoundingBox = {{-96 + bastionCoordinates[bastionInstance].x, -96 + bastionCoordinates[bastionInstance].z}, {96 + bastionCoordinates[bastionInstance].x, 96 + bastionCoordinates[bastionInstance].z}};
+            result = structureChecker(lower48, structs, 1, MC, fortressBoundingBox, data, result, fortressCoordinates);
+            if (result == false) continue; // If result is true, structure generated. If false, structure did not generate in bounding box
+            
+            for (uint64_t upper16 = 0; upper16 < upperBits; ++upper16) 
             {
-                DoublePos fortressBoundingBox = {{-96 + bastionCoordinates[bastionInstance].x, -96 + bastionCoordinates[bastionInstance].z}, {96 + bastionCoordinates[bastionInstance].x, 96 + bastionCoordinates[bastionInstance].z}};
-                int structureIndex = 1;
-                result = structureChecker(lower48, structs, 1, MC, fortressBoundingBox, data, result, fortressCoordinates);
-                if (result == 1) 
+                seed = lower48 | (upper16 << 48);
+                for (int i = 0; i < numberOfStructs; ++i) 
                 {
-                    continue;
-                } 
-                else 
-                {
-                    int allChecksFailed = 1;
-                    for (uint64_t upper16 = 0; upper16 < upperBits; ++upper16) 
+                    data[i].positionsCount = 0;
+                    if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
+                    for (int j = 0; j < data[i].candidatesCount; ++j) 
                     {
-                        seed = lower48 | (upper16 << 48);
-                        for (int i = 0; i < numberOfStructs; ++i) 
-                        {
-                            data[i].positionsCount = 0;
-                            if (g.seed != seed || g.dim != data[i].dimension) applySeed(&g, data[i].dimension, seed);
-                            for (int j = 0; j < data[i].candidatesCount; ++j) 
-                            {
-                                if (!isViableStructurePos(structs[i], &g, data[i].candidates[j].x, data[i].candidates[j].z, 0) ||
-                                    !isViableStructureTerrain(structs[i], &g, data[i].candidates[j].x, data[i].candidates[j].z))
-                                    continue;
-                                data[i].positions[data[i].positionsCount] = data[i].candidates[j];
-                                data[i].positionsCount++;
-                            }
-                            if (data[i].positionsCount > 0) 
-                            {
-                                allChecksFailed = 0;
-                                break;
-                            }
-                        }
-                        if (!allChecksFailed) 
-                            break;
+                        if (!isViableStructurePos(structs[i], &g, data[i].candidates[j].x, data[i].candidates[j].z, 0) ||
+                            !isViableStructureTerrain(structs[i], &g, data[i].candidates[j].x, data[i].candidates[j].z))
+                            continue;
+                        data[i].positions[data[i].positionsCount] = data[i].candidates[j];
+                        data[i].positionsCount++;
                     }
-
-                    if (allChecksFailed) 
-                        continue;
-
-                    biome = getBiomeAt(&g, 1, bastionCoordinates[bastionInstance].x, 64, bastionCoordinates[bastionInstance].z);
-                    if (biome == basalt_deltas) 
+                    if (data[i].positionsCount > 0) 
                     {
-                        goto nextStructureSeed;
+                        checkFailed = false;
+                        break;
                     }
-
-                    biome = getBiomeAt(&g, 1, fortressCoordinates[bastionInstance].x, 64, fortressCoordinates[bastionInstance].z); 
-                    if (biome != soul_sand_valley) 
-                    {    
-                        goto nextStructureSeed;
-                    }
-                    fprintf(file, "%" PRId64 "\n", seed);
-                    goto nextStructureSeed;
                 }
+                if (!checkFailed) break;
+            }
+
+            if (checkFailed) continue;
+
+            biome = getBiomeAt(&g, 1, bastionCoordinates[bastionInstance].x, 64, bastionCoordinates[bastionInstance].z);
+            if (biome == basalt_deltas)
+            {
+                checkFailed = true;
+                continue;
+            }
+
+            biome = getBiomeAt(&g, 1, fortressCoordinates[bastionInstance].x, 64, fortressCoordinates[bastionInstance].z); 
+            if (biome != soul_sand_valley)
+            {
+                checkFailed = true;
+                continue;
             }
         }
 
-        nextStructureSeed:
+        if (checkFailed) continue; // If any of the checks have failed (fastion and nether biomes) up to this point, go to the next seed
+
+        fprintf(file, "%" PRId64 "\n", seed);
 
         for (int i = 0; i < numberOfStructs; ++i) 
         {
@@ -253,8 +242,8 @@ int main(int argc, char **argv)
         }
         continue;
     }
+
     fprintf(file, "Done\n");
-    printf("Done\n");
     fclose(fp);
     fclose(file);
     return 0;
