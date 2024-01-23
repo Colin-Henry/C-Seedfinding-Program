@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <string.h>
 #include "finders.c"
 #include "generator.c"
-#include "biome_tree.c"
-#include "layers.c"
+#include "biomenoise.c"
+#include "biometree.c"
 #include "noise.c"
+#include "layers.c"
 
 typedef struct 
 {
@@ -121,10 +123,10 @@ bool structureChecker(int lower48, int structs[], int structureIndex, int MC, Do
 int main(int argc, char **argv) 
 {
     FILE *fp;
-    char *inputPath = "seedRange.txt";
+    char *inputPath = "D:/Seedfinding/test/seedRange.txt";
 
     FILE *file;
-    const char *filename = "seeds.txt";
+    const char *filename = "D:/Seedfinding/test/seeds.txt";
     file = fopen(filename, "a");
     
     if (file == NULL) 
