@@ -38,42 +38,6 @@ bool result = false;
 
 bool structureChecker(int lower48, int structs[], int structureIndex, int MC, DoublePos origCoords, StructData data[], bool result, Pos* structureCoordinates) 
 {
-    for (int i = 0; i < numberOfStructs; ++i) 
-    {
-        StructureConfig currentStructureConfig;
-        if (!getStructureConfig(structs[i], MC, &currentStructureConfig)) 
-        {
-            printf("ERROR: Structure #%d in the structs array cannot exist in the specified version.\n", i);
-            exit(1);
-        }
-
-        switch (currentStructureConfig.regionSize) 
-        {
-            case 32:
-                data[i].regionCoords.first.x = origCoords.first.x >> 9;
-                data[i].regionCoords.first.z = origCoords.first.z >> 9;
-                data[i].regionCoords.second.x = origCoords.second.x >> 9;
-                data[i].regionCoords.second.z = origCoords.second.z >> 9;
-                break;
-            case 1:
-                data[i].regionCoords.first.x = origCoords.first.x >> 4;
-                data[i].regionCoords.first.z = origCoords.first.z >> 4;
-                data[i].regionCoords.second.x = origCoords.second.x >> 4;
-                data[i].regionCoords.second.z = origCoords.second.z >> 4;
-                break;
-            default:
-                data[i].regionCoords.first.x = (origCoords.first.x / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x < 0);
-                data[i].regionCoords.first.z = (origCoords.first.z / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z < 0);
-                data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
-                data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
-                break;
-        }
-
-        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER :
-                            currentStructureConfig.properties & STRUCT_END    ? DIM_END :
-                                                                                DIM_OVERWORLD;
-    }
-
     Pos p;
     int i = structureIndex; // Use the correct data element corresponding to the structure being checked
     data[i].candidatesCount = 0;
@@ -173,6 +137,42 @@ int main(int argc, char **argv)
 
     Pos bastionCoordinates[4];
     Pos fortressCoordinates[4];
+
+    for (int i = 0; i < numberOfStructs; ++i) 
+    {
+        StructureConfig currentStructureConfig;
+        if (!getStructureConfig(structs[i], MC, &currentStructureConfig)) 
+        {
+            printf("ERROR: Structure #%d in the structs array cannot exist in the specified version.\n", i);
+            exit(1);
+        }
+
+        switch (currentStructureConfig.regionSize) 
+        {
+            case 32:
+                data[i].regionCoords.first.x = origCoords.first.x >> 9;
+                data[i].regionCoords.first.z = origCoords.first.z >> 9;
+                data[i].regionCoords.second.x = origCoords.second.x >> 9;
+                data[i].regionCoords.second.z = origCoords.second.z >> 9;
+                break;
+            case 1:
+                data[i].regionCoords.first.x = origCoords.first.x >> 4;
+                data[i].regionCoords.first.z = origCoords.first.z >> 4;
+                data[i].regionCoords.second.x = origCoords.second.x >> 4;
+                data[i].regionCoords.second.z = origCoords.second.z >> 4;
+                break;
+            default:
+                data[i].regionCoords.first.x = (origCoords.first.x / (currentStructureConfig.regionSize << 4)) - (origCoords.first.x < 0);
+                data[i].regionCoords.first.z = (origCoords.first.z / (currentStructureConfig.regionSize << 4)) - (origCoords.first.z < 0);
+                data[i].regionCoords.second.x = (origCoords.second.x / (currentStructureConfig.regionSize << 4)) - (origCoords.second.x < 0);
+                data[i].regionCoords.second.z = (origCoords.second.z / (currentStructureConfig.regionSize << 4)) - (origCoords.second.z < 0);
+                break;
+        }
+
+        data[i].dimension = currentStructureConfig.properties & STRUCT_NETHER ? DIM_NETHER :
+                            currentStructureConfig.properties & STRUCT_END    ? DIM_END :
+                                                                                DIM_OVERWORLD;
+    }
 
     Generator g;
     setupGenerator(&g, MC, 0);
