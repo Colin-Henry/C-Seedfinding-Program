@@ -87,10 +87,10 @@ bool structureChecker(int lower48, int structs[], int structureIndex, int MC, Do
 int main(int argc, char **argv) 
 {
     FILE *fp;
-    char *inputPath = "D:/Seedfinding/test/seedRange.txt";
+    char *inputPath = "D:/Seedfinding/longTest/seedRange.txt";
 
     FILE *file;
-    const char *filename = "D:/Seedfinding/test/seeds.txt";
+    const char *filename = "D:/Seedfinding/longTest/seeds.txt";
     file = fopen(filename, "a");
     
     if (file == NULL) 
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 
     Pos bastionCoordinates[4];
     Pos fortressCoordinates[4];
-
+    
     for (int i = 0; i < numberOfStructs; ++i) 
     {
         StructureConfig currentStructureConfig;
@@ -246,7 +246,6 @@ int main(int argc, char **argv)
     }
 
     fprintf(file, "Done\n");
-    fclose(fp);
     fclose(file);
     return 0;
 }
